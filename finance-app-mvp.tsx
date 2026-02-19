@@ -16,7 +16,10 @@ const FinanceApp = () => {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [transactions, setTransactions] = useState([]);
   const [showAddExpense, setShowAddExpense] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState(36.50);
+  const [exchangeRate, setExchangeRate] = useState(0);
+  const [rateLoading, setRateLoading] = useState(true);
+  const [rateUpdatedAt, setRateUpdatedAt] = useState(null);
+  const [rateError, setRateError] = useState(false);
   
   // Form state
   const [amount, setAmount] = useState('');
@@ -32,6 +35,27 @@ const FinanceApp = () => {
     { id: 'health', name: 'Salud', icon: '⚕️', color: 'bg-green-500' },
     { id: 'other', name: 'Otros', icon: '📦', color: 'bg-gray-500' }
   ];
+
+  // Fetch live BCV rate from dolarapi.com
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        setRateLoading(true);
+        setRateError(false);
+        const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+        const data = await res.json();
+        if (data.promedio) {
+          setExchangeRate(parseFloat(data.promedio));
+          setRateUpdatedAt(data.fechaActualizacion);
+        }
+      } catch (err) {
+        setRateError(true);
+      } finally {
+        setRateLoading(false);
+      }
+    };
+    fetchRate();
+  }, []);
 
   // Check if user is logged in on mount
   useEffect(() => {
@@ -379,11 +403,26 @@ const FinanceApp = () => {
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm opacity-90">Tasa BCV Hoy</span>
+          <span className="text-sm opacity-90">Tasa BCV Oficial</span>
           <TrendingUp className="w-4 h-4" />
         </div>
-        <div className="text-4xl font-bold">Bs {exchangeRate.toFixed(2)}</div>
-        <div className="text-sm opacity-90 mt-1">por 1 USD</div>
+        {rateLoading ? (
+          <div className="text-2xl font-bold opacity-75 animate-pulse">Cargando...</div>
+        ) : rateError ? (
+          <div className="text-lg font-bold opacity-75">Error al obtener tasa</div>
+        ) : (
+          <>
+            <div className="text-4xl font-bold">Bs {exchangeRate.toFixed(2)}</div>
+            <div className="text-sm opacity-90 mt-1">por 1 USD</div>
+            {rateUpdatedAt && (
+              <div className="text-xs opacity-70 mt-2">
+                Actualizado: {new Date(rateUpdatedAt).toLocaleString('es-VE', {
+                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                })}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl p-6 shadow-md">
