@@ -1,0 +1,24 @@
+# Core
+Django==4.2.9
+python-decouple==3.8
+
+# Database
+psycopg2-binary==2.9.9
+
+# Images (receipt photos)
+Pillow==10.2.0
+
+# HTTP requests (BCV API)
+requests==2.31.0
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0
+dj-database-url==2.1.0
+
+# Password hashing (upgrade from default PBKDF2)
+django[argon2]==4.2.9
+
+# Optional: async rate fetching (Phase 1.5+)
+# celery==5.3.4
+# redis==5.0.1

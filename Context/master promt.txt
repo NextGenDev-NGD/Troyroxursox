@@ -1,0 +1,131 @@
+# PROJECT ANALYSIS & ARCHITECTURE DESIGN REQUEST
+
+## ROLE
+Act as a senior Python architect and financial software engineer. You have extensive experience building modular web applications, preferably with Django or Flask. You understand the challenges of dual-currency systems and have worked on fintech projects before.
+
+---
+
+## CONTEXT FILES (READ THESE FIRST)
+
+I have three files in my `/context` folder that contain all the research, requirements, and vision for this project:
+
+1. **`New considerations.md`** - Complete project overview, requirements, modular structure, and development phases
+2. **`Complete Backup Package - All Files.pdf`** - The original React prototype files (code, structure, documentation)
+3. **`Competitive Analysis - Venezuelan Finance Tracker vs Market Leaders.pdf`** - Detailed analysis of 25+ competitors, feature gaps, and market positioning
+
+**Please read and analyze ALL three files before responding.** They contain:
+- What the prototype does well and poorly
+- Why we're rebuilding in Python
+- The dual-currency value proposition
+- 25+ feature gaps we need to fill
+- The competitive landscape
+- Our unique advantages
+
+---
+
+## MY CURRENT SITUATION
+
+I am a solo developer rebuilding a Venezuelan dual-currency finance tracker as a **Python web application**. The goal is to create a **modular, maintainable** system that:
+
+- Starts with a secure MVP (authentication, expenses, income, categories, search)
+- Can easily add features later (accounts, recurring, goals, reports)
+- Preserves the dual-currency-with-historical-rates differentiator
+- Avoids the security mistakes of the prototype (no plain text passwords!)
+- Is mobile-responsive (most Venezuelan users access via phone)
+
+---
+
+## WHAT I NEED FROM YOU
+
+Based on your analysis of the three context files, please provide me with a **complete architecture and implementation plan** covering the following:
+
+### PART 1: FRAMEWORK DECISION
+- **Django vs Flask** - Which is better for this modular finance app and why?
+- Consider: solo developer, need for modularity, admin interface needs, future scaling
+- Provide a clear recommendation with pros/cons specific to this project
+
+### PART 2: HIGH-LEVEL ARCHITECTURE
+- Describe the overall system architecture
+- How modules will interact (diagram in text format)
+- Data flow between frontend, backend, and database
+- File storage strategy for receipt photos
+
+### PART 3: MODULE STRUCTURE (Based on my project-context.md)
+- Define each module with clear responsibilities
+- Show module dependencies (what depends on what)
+- Provide the folder structure with file listings
+- Explain how to keep modules truly decoupled
+
+### PART 4: DATABASE SCHEMA DESIGN
+- Complete schema for MVP (Users, Transactions, Categories, Receipts)
+- Field definitions, data types, relationships
+- How to handle dual currency with historical rates
+- Indexing strategy for search performance
+- Future tables structure (Accounts, Recurring, Goals) - show how they'll connect
+
+### PART 5: DEEP DIVE - TRANSACTIONS MODULE (MVP CORE)
+This is the most critical module. Provide:
+
+- **Models** (with code)
+- **Views/Controllers** (with code)
+- **Forms** for adding/editing (with code)
+- **Currency conversion logic** (with code)
+- **Search implementation** (with code)
+- **Templates** structure (not full HTML, but template names and context variables)
+- **URLs/routes** structure
+
+### PART 6: AUTHENTICATION SYSTEM
+- Secure user authentication (no plain text!)
+- Registration, login, logout, password reset
+- Session management
+- Admin user setup
+
+### PART 7: EXCHANGE RATE HANDLING
+- How to store rates with each transaction
+- How to handle manual rate entry vs API rates
+- Structure for future API integration (BCV, parallel market)
+
+### PART 8: RECEIPT PHOTO HANDLING
+- Storage strategy (filesystem vs cloud)
+- File naming conventions
+- Security considerations
+- Display in templates
+
+### PART 9: SECURITY CHECKLIST
+- All security measures implemented
+- What the prototype did wrong that we're fixing
+- Data encryption at rest and in transit
+- Input validation and sanitization
+
+### PART 10: DEVELOPMENT ROADMAP (Weeks 1-6)
+- Week-by-week breakdown
+- What to build first, second, third
+- Dependencies between tasks
+- Testing strategy for each module
+
+### PART 11: DEPLOYMENT CONSIDERATIONS
+- Hosting recommendations (Render, PythonAnywhere, VPS)
+- Environment variables setup
+- Database migration strategy
+- Backup strategy
+- Considerations for Venezuelan users (connectivity, mobile)
+
+---
+
+## OUTPUT FORMAT
+
+Please structure your response with clear headings (Part 1, Part 2, etc.). For code blocks, use proper syntax highlighting markers (```python, ```sql, etc.). Be detailed but practical - I need to actually implement this.
+
+---
+
+## ADDITIONAL NOTES
+
+- The dual-currency with historical rates is our **non-negotiable differentiator**
+- Security must be **production-ready from day 1** (unlike the prototype)
+- I am a solo developer - keep things **pragmatic and achievable**
+- The app must work well on **mobile devices** (responsive design)
+- Start simple, but design for **future expansion**
+
+---
+
+Thank you! I'm ready for your comprehensive architecture and implementation plan.

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Eliminar Transacción{% endblock %}
+
+{% block content %}
+<div class="max-w-sm mx-auto mt-10">
+    <div class="bg-white rounded-xl shadow p-6 text-center">
+        <p class="text-4xl mb-3">⚠️</p>
+        <h2 class="text-lg font-semibold text-gray-800 mb-2">¿Eliminar esta transacción?</h2>
+        <p class="text-sm text-gray-500 mb-1">{{ tx.category.icon }} {{ tx.category.name }}</p>
+        <p class="text-sm text-gray-500 mb-4">${{ tx.amount_usd }} · {{ tx.date }}</p>
+        <p class="text-xs text-red-500 mb-6">Esta acción no se puede deshacer.</p>
+        <form method="post" class="flex gap-3">
+            {% csrf_token %}
+            <button type="submit"
+                    class="flex-1 bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700">
+                Sí, eliminar
+            </button>
+            <a href="{% url 'transactions:list' %}"
+               class="flex-1 text-center border border-gray-300 py-2 rounded-lg text-gray-600 hover:bg-gray-50">
+                Cancelar
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

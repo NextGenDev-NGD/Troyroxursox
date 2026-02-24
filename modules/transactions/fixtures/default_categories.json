@@ -1,0 +1,15 @@
+[
+  {"model": "transactions.category", "pk": 1, "fields": {"user": null, "name": "Comida", "icon": "🍔", "color": "#F97316", "category_type": "EXPENSE", "is_active": true}},
+  {"model": "transactions.category", "pk": 2, "fields": {"user": null, "name": "Transporte", "icon": "🚗", "color": "#3B82F6", "category_type": "EXPENSE", "is_active": true}},
+  {"model": "transactions.category", "pk": 3, "fields": {"user": null, "name": "Servicios", "icon": "💡", "color": "#EAB308", "category_type": "EXPENSE", "is_active": true}},
+  {"model": "transactions.category", "pk": 4, "fields": {"user": null, "name": "Compras", "icon": "🛍️", "color": "#EC4899", "category_type": "EXPENSE", "is_active": true}},
+  {"model": "transactions.category", "pk": 5, "fields": {"user": null, "name": "Salud", "icon": "⚕️", "color": "#22C55E", "category_type": "EXPENSE", "is_active": true}},
+  {"model": "transactions.category", "pk": 6, "fields": {"user": null, "name": "Educación", "icon": "📚", "color": "#8B5CF6", "category_type": "EXPENSE", "is_active": true}},
+  {"model": "transactions.category", "pk": 7, "fields": {"user": null, "name": "Entretenimiento", "icon": "🎬", "color": "#F43F5E", "category_type": "EXPENSE", "is_active": true}},
+  {"model": "transactions.category", "pk": 8, "fields": {"user": null, "name": "Otros Gastos", "icon": "📦", "color": "#6B7280", "category_type": "EXPENSE", "is_active": true}},
+  {"model": "transactions.category", "pk": 9, "fields": {"user": null, "name": "Salario", "icon": "💼", "color": "#10B981", "category_type": "INCOME", "is_active": true}},
+  {"model": "transactions.category", "pk": 10, "fields": {"user": null, "name": "Freelance", "icon": "💻", "color": "#06B6D4", "category_type": "INCOME", "is_active": true}},
+  {"model": "transactions.category", "pk": 11, "fields": {"user": null, "name": "Remesa", "icon": "💸", "color": "#84CC16", "category_type": "INCOME", "is_active": true}},
+  {"model": "transactions.category", "pk": 12, "fields": {"user": null, "name": "Negocio", "icon": "🏪", "color": "#F59E0B", "category_type": "INCOME", "is_active": true}},
+  {"model": "transactions.category", "pk": 13, "fields": {"user": null, "name": "Otros Ingresos", "icon": "➕", "color": "#6B7280", "category_type": "INCOME", "is_active": true}}
+]

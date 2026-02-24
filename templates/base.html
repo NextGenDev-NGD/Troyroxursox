@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mis Finanzas Venezuela{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    {% if user.is_authenticated %}
+    <!-- Navbar -->
+    <nav class="bg-blue-700 text-white px-4 py-3 flex justify-between items-center shadow">
+        <a href="{% url 'core:dashboard' %}" class="font-bold text-lg">💰 Mis Finanzas VE</a>
+        <div class="flex gap-4 text-sm">
+            <a href="{% url 'transactions:list' %}" class="hover:underline">Transacciones</a>
+            <a href="{% url 'transactions:add' %}" class="bg-white text-blue-700 px-3 py-1 rounded font-semibold hover:bg-blue-50">+ Agregar</a>
+            <a href="{% url 'core:logout' %}" class="hover:underline">Salir</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="max-w-4xl mx-auto mt-4 px-4">
+        {% for message in messages %}
+        <div class="p-3 rounded mb-2
+            {% if message.tags == 'error' %}bg-red-100 text-red-700
+            {% elif message.tags == 'success' %}bg-green-100 text-green-700
+            {% else %}bg-blue-100 text-blue-700{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>
