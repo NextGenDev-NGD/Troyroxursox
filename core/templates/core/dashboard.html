@@ -39,7 +39,7 @@
             <div class="flex items-center gap-3">
                 <span class="text-xl">{{ tx.category.icon }}</span>
                 <div>
-                    <p class="font-medium text-gray-800 text-sm">{{ tx.category.name }}</p>
+                    <a href="{% url 'transactions:detail' tx.pk %}" class="font-medium text-gray-800 text-sm hover:text-blue-600 hover:underline">{{ tx.category.name }}</a>
                     <p class="text-xs text-gray-400">{{ tx.date }} · {{ tx.description|default:"Sin descripción" }}</p>
                 </div>
             </div>

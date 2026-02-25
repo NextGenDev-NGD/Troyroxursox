@@ -18,17 +18,15 @@ class TransactionForm(forms.ModelForm):
     class Meta:
         model = Transaction
         fields = ['transaction_type', 'category', 'amount', 'currency',
-                  'description', 'date', 'receipt_photo']
+                  'date', 'receipt_photo']
         labels = {
             'transaction_type': 'Tipo',
             'category': 'Categoría',
-            'description': 'Descripción',
             'date': 'Fecha',
             'receipt_photo': 'Foto del recibo (opcional)',
         }
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
-            'description': forms.TextInput(attrs={'placeholder': 'Ej: Mercado Central'}),
         }
 
     def __init__(self, user, *args, **kwargs):
