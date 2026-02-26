@@ -1,9 +1,9 @@
 # Project Context — Mis Finanzas Venezuela
 
-**Document Version:** 1.0
-**Last Updated:** February 2026
-**Status:** Active Development — Python Rebuild Phase
-**Branch:** experiment
+**Document Version:** 1.1
+**Last Updated:** February 25, 2026
+**Status:** Active Development — Phase 1 (Core MVP) In Progress
+**Branch:** experiment → merged to main after each session
 
 ---
 
@@ -74,7 +74,7 @@ The existing prototype in this repo is a React/localStorage single-page app. Her
 | Interactivity | Alpine.js (lightweight, <15KB) |
 | File Storage | Local filesystem → S3/Cloudinary (production) |
 | Password Hashing | Argon2 (upgrade from Django default PBKDF2) |
-| Exchange Rate API | `ve.dolarapi.com` (same as prototype) |
+| Exchange Rate API | `pyDolarVenezuela` (primary, scrapes BCV directly) + `ve.dolarapi.com` (fallback) |
 | Deployment | Render.com (recommended) |
 
 ---
@@ -113,8 +113,10 @@ The existing prototype in this repo is a React/localStorage single-page app. Her
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────┐
-│              EXTERNAL: ve.dolarapi.com                   │
-│         (BCV official rate + parallel market)            │
+│         EXTERNAL: pyDolarVenezuela (primary)             │
+│         scrapes bcv.org.ve directly — most accurate      │
+│         ─────────────────────────────────────────        │
+│         FALLBACK: ve.dolarapi.com REST API               │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -169,7 +171,8 @@ venezuela-finance-app/
 │   │   └── templates/transactions/
 │   │       ├── list.html
 │   │       ├── add.html          ← also used for edit
-│   │       └── confirm_delete.html
+│   │       ├── confirm_delete.html
+│   │       └── detail.html       ← transaction detail with receipt display
 │   │
 │   ├── exchange_rates/           ← Rate fetching, storage, caching
 │   │   ├── models.py             ← ExchangeRate (historical log)
@@ -193,7 +196,7 @@ venezuela-finance-app/
 │   ├── css/
 │   └── js/
 │
-├── media/                        ← User uploads (gitignored)
+├── media/                        ← User uploads (gitignored by design — user photos must never be committed)
 │   └── receipts/
 │
 └── Context/                      ← This folder
@@ -329,7 +332,20 @@ def get_current_rate() -> Decimal:
     cached = cache.get('bcv_rate_current')
     if cached:
         return Decimal(str(cached))
-    # Falls back to DB, then hardcoded 36.50
+    # Cache miss → fetch live from pyDolarVenezuela → store in DB → cache 15min
+    from .services import fetch_and_store_rate
+    rate = fetch_and_store_rate()
+    cache.set(CACHE_KEY, str(rate), timeout=CACHE_TIMEOUT)
+    return rate
+# FALLBACK_RATE = Decimal('414.00') — updated from 36.50
+```
+
+### BCV Rate Fetch Chain (modules/exchange_rates/services.py)
+```python
+def fetch_bcv_rate() -> Decimal | None:
+    # 1st: pyDolarVenezuela — scrapes BCV directly (most accurate)
+    # 2nd: ve.dolarapi.com REST API (fallback if scraper fails)
+    # Returns None if both fail → caller uses last DB rate
 ```
 
 ### Saving a Transaction (modules/transactions/views.py)
@@ -359,24 +375,30 @@ tx.save()
 
 ## 10. Development Roadmap
 
-### Phase 0: Foundation (Week 1–2) — IN PROGRESS
+### Phase 0: Foundation (Week 1–2) — COMPLETE
 - [x] Project structure created
 - [x] Custom User model
 - [x] Settings split (dev/prod)
 - [x] Authentication system (register, login, logout, password reset)
 - [x] Base template with Tailwind
-- [ ] Run first migration
-- [ ] Load default categories fixture
-- [ ] Create superuser
+- [x] Migrations generated and applied
+- [x] 13 default categories loaded from fixture
+- [x] Superuser created (Troy)
+- [x] Django system check: 0 issues
+- [x] Dev server confirmed working (WSL → Windows browser)
 
-### Phase 1: Core MVP (Week 3–6)
-- [ ] Transaction add/edit/delete (expense + income)
+### Phase 1: Core MVP (Week 3–6) — IN PROGRESS
+- [x] Transaction add/edit/delete (expense + income)
+- [x] Exchange rate storage and caching (auto-fetch via pyDolarVenezuela)
+- [x] Dashboard with monthly summary + BCV rate banner
+- [x] Transaction list with search and filters
+- [x] Transaction detail page (detail.html)
+- [x] Receipt photo upload (validated: JPEG/PNG/WebP, max 5MB)
+- [x] Category names clickable → detail page (list + dashboard)
+- [x] Login error messages fixed (non_field_errors now displayed)
+- [x] Description field removed from transaction form (DB field preserved)
+- [ ] CSV export — built but untested end-to-end
 - [ ] Category management (create custom categories)
-- [ ] Exchange rate storage and caching
-- [ ] Dashboard with monthly summary
-- [ ] Transaction list with search and filters
-- [ ] Receipt photo upload
-- [ ] CSV export
 
 ### Phase 1.5: Critical Gaps (Week 7–10)
 - [ ] Multiple accounts (Cash, Bank, Credit, Savings)
@@ -497,4 +519,25 @@ python manage.py runserver
 ---
 
 *Generated in session: February 2026 — Architecture planning session with Claude*
-*Next action: Run migrations and load default categories to validate the starter setup*
+
+---
+
+## 16. Change Log (Post-Planning Sessions)
+
+### Session — February 24, 2026
+- Full Django project built from scratch (2,407 lines — `7eddf54`)
+- React prototype (`finance-app-mvp.tsx`) deleted — Django is the only codebase (`6c2c4e8`)
+- Migrations applied, 13 default categories loaded, superuser `Troy` created
+- Dev server confirmed working on WSL (bind `0.0.0.0:8000`, access via Windows browser)
+
+### Session — February 25, 2026
+- **Bug:** `detail.html` template missing — referenced in views but never created → **fixed, created**
+- **Bug:** Category names in list/dashboard not clickable → **fixed, link to detail page**
+- **Bug:** Login failures showed no error message (`non_field_errors` not rendered) → **fixed**
+- **Change:** `description` field removed from transaction add/edit form. Field retained in DB model (`blank=True`) so no migration needed and existing data preserved
+- **API upgrade:** `ve.dolarapi.com` returning stale rate (`411.09` vs real `414.05`). `rafnixg/bcv-api` was down (HTTP 503). Switched to `pyDolarVenezuela` as primary source (scrapes BCV directly). `ve.dolarapi.com` kept as fallback
+- **Bug:** `get_current_rate()` on cache miss only read from DB, never called the API → fixed to call `fetch_and_store_rate()` automatically, making rate display self-updating
+- **Hardcoded fallback rate** updated: `36.50` → `414.00`
+- **Receipt photo upload** — confirmed working end-to-end. `media/` is gitignored by deliberate design decision — user uploaded photos must never be committed to the repository
+- **`pyDolarVenezuela`** added to `requirements.txt`
+- Branch `experiment` merged to `main` and pushed to remote after each working session
