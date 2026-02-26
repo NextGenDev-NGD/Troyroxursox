@@ -1,530 +1,174 @@
-Project Overview
-Project Name
-Mis Finanzas Venezuela (working title)
+# NEW CONSIDERATIONS.md
+## Second Opinion & Fresh Perspectives
+**Date:** February 25, 2026
+**Reviewer:** AI Architect (Fresh Eyes)
 
-Problem Statement
-Venezuelans operate in a dual-currency economy (Bolívares and USD). International finance apps like Mint, YNAB, and PocketGuard:
+---
 
-Don't handle dual currency natively
+## 1. EXECUTIVE SUMMARY
+- **Overall Impression:** The plan is exceptionally grounded in the specific pain points of the Venezuelan market—particularly the "exchange rate at time of transaction" differentiator. The shift from a React/localStorage prototype to a Django-backend monolith is the correct architectural move for data integrity and security.
+- **Top 3 Biggest Risks:**
+    1. **Connectivity Despair:** While "Offline-first" is mentioned, a standard Django web app will fail completely the moment the data connection drops (common in VE).
+    2. **The "Parallel" Elephant:** The plan leans heavily on BCV rates, but most informal commerce (and users' mental math) runs on Parallel rates (Monitor/EnParalelo). Ignoring this in the MVP is a product risk.
+    3. **Receipt Storage Costs:** Storing images on S3/Cloudinary will quickly become the highest monthly cost for a solo developer if not optimized.
+- **Top 3 Biggest Opportunities:**
+    1. **Hyper-Localization:** Capturing "Pago Móvil" and "Zelle" metadata (Reference numbers) to make the app a source of truth for bank disputes.
+    2. **Inflation Analytics:** Showing "Purchasing Power" charts (how much flour did my salary buy in Jan vs Dec).
+    3. **Export to Tax-Ready Formats:** Helping small "emprendedores" calculate their contribution to the IGTF (Impuesto a las Grandes Transacciones Financieras).
+- **Greenlight?** **YES.** The dual-currency historical rate problem is a massive, unsolved gap in a market of 28+ million people.
 
-Convert at today's rates (useless for inflation tracking)
+---
 
-Lack understanding of Venezuelan reality (Pago Móvil, remittances, crypto)
+## 2. WHAT THE PLAN GETS RIGHT
+- **Historical Rate Locking:** Locking the rate at the moment of save is the "Killer Feature." Never change this.
+- **Django Choice:** Using a "batteries-included" framework allows the solo dev to focus on business logic rather than re-inventing authentication or migrations.
+- **Modular Approach:** Separation of `exchange_rates` from `transactions` allows for future-proofing against API changes.
 
-Often require constant internet (problematic locally)
+---
 
-Solution
-A Python-based web application that:
+## 3. CRITICAL BLIND SPOTS & RISKS
 
-Tracks expenses in both Bs and USD with historical exchange rates
+### 3.1 Technical Risks
+| Risk | Why It Matters | Suggested Mitigation |
+|------|----------------|---------------------|
+| **Total Offline Failure** | Django templates require a round-trip. If the user is at a checkout with no signal, they can't log the expense. | Implement a **PWA (Progressive Web App)** with a Service Worker that caches the "Add Transaction" form and uses `IndexedDB` to queue submissions. |
+| **BCV API Fragility** | The BCV website frequently changes its structure or goes down during peak hours (4 PM). | Implement a multi-source "Consensus" service: Fetch from BCV, DolarToday, and Parallel, but let the user *override* and save a "Custom Rate" easily. |
+| **Image Bloat** | High-res phone photos (5MB+) will kill page loads and storage budgets. | Client-side compression using JavaScript (Canvas API) *before* the upload ever hits the server. |
 
-Stores receipt photos permanently
+### 3.2 Product Risks
+| Risk | Why It Matters | Suggested Mitigation |
+|------|----------------|---------------------|
+| **Manual Entry Fatigue** | Users stop using finance apps when they have to type 20 transactions a day. | Add a "Quick Add" widget and, eventually, a "Clipboard Parser" for Pago Móvil SMS/WhatsApp confirmations. |
+| **Currency Confusion** | If a user pays in USD but gets change in Bs, logging the transaction becomes a nightmare. | Support **"Mixed Payment"** entries where a single transaction has multiple currency components. |
 
-Shows true spending power over time
+### 3.3 Market Risks
+| Risk | Why It Matters | Suggested Mitigation |
+|------|----------------|---------------------|
+| **Privacy Paranoia** | Venezuelans are rightfully wary of logging their financial life in a cloud database. | Explicitly market the "No Bank Sync" as a security feature. Consider a "Local-Only Mode" for high-privacy users. |
 
-Works offline-first when possible
+---
 
-Built modularly for easy maintenance and feature addition
+## 4. ALTERNATIVE APPROACHES TO CONSIDER
 
-Target Users
-Venezuelans living in Venezuela (dual currency users)
+### 4.1 Architecture Alternatives
+- **Current plan:** Standard Server-Side Django Templates.
+- **Consider:** **HTMX + Alpine.js + PWA.**
+- **Why:** HTMX allows for "SPA-like" speed without the React complexity, and a PWA wrapper is essential for the "Add Expense" flow when internet is spotty.
+- **Trade-offs:** Requires learning HTMX patterns, but keeps the codebase 90% Python.
 
-Venezuelans abroad sending remittances
+### 4.2 Technology Alternatives
+- **Current plan:** `pyDolarVenezuela` scraper.
+- **Consider:** Building a small "Scraper Proxy" or using a dedicated Lambda function.
+- **Why:** Scrapers break. If the main app depends on it, the whole app feels "broken." Isolating the scraper prevents the main web server from hanging on slow BCV response times.
 
-Anyone dealing with multiple currencies and high inflation
+---
 
-Current State Analysis
-What Exists Now (React Prototype)
-Aspect	Current Status	Issues
-Frontend	React with Tailwind	Client-side only, no backend
-Data Storage	localStorage	Data lost on device change, no sync
-Authentication	Plain text passwords	CRITICAL SECURITY RISK
-Exchange Rates	Hardcoded (36.50 Bs/USD)	Not real-time
-Categories	6 fixed categories	No customization
-Receipts	Base64 in localStorage	Bloats storage, not scalable
-Features	Basic expense tracking	Missing 20+ standard features
-Deployment	Static HTML/JS	No server-side logic
-Key Lessons from Prototype
-What Worked:
+## 5. VENEZUELAN-SPECIFIC DEEP DIVE
 
-✅ Simple, clean UI
+### 5.1 Connectivity Reality
+- **The "ABA" Factor:** Cantv/ABA is unreliable. Architecture must assume the user is "Offline" by default and "Online" by accident. 
+- **Recommendation:** Use a "Drafts" system in the browser's `localStorage` that syncs to Django when a connection is detected.
 
-✅ Dual currency display
+### 5.2 Device Reality
+- **Storage Constraints:** Many users have older Androids with <32GB storage.
+- **Data Usage:** Data plans are expensive relative to minimum wage.
+- **Recommendation:** Keep the initial JS payload <100KB. Avoid heavy CSS frameworks; Tailwind via CDN is okay for dev, but use PurgeCSS for production.
 
-✅ Receipt photo concept
+### 5.3 Payment Ecosystem
+- **Pago Móvil:** It's the king. Every transaction has a "Referencia" (last 4 digits). Adding a field for this makes the app a searchable bank statement.
+- **Zelle/Remittances:** Often handled by a third party. The app needs a "Source" field (e.g., "Mom's Zelle", "Cash", "Banesco").
+- **The "Vuelto" Problem:** Stores often don't have change. "Vuelto en Bs" or "Vale" (store credit) needs to be trackable as a "Negative Expense" or "Store Credit Account."
 
-✅ Category breakdown with emojis
+---
 
-What Failed/Needs Fix:
+## 6. SECURITY NUANCES
 
-❌ No data persistence across devices
+### 6.1 Threat Modeling
+- **The "Street Search" Vector:** If a user is stopped and their phone is searched, having a "Finance App" might be a liability.
+- **Mitigation:** A "Disguise Mode" or a "Quick Log Out" button. PIN-code lock within the app (even if the phone is unlocked).
 
-❌ Security completely absent
+### 6.2 Compliance
+- **Receipts:** In VE, a photo of a receipt is often the only proof of warranty. High-quality (but compressed) storage is a service in itself.
 
-❌ No income tracking (expenses only)
+---
 
-❌ Can't find past transactions (no search)
+## 7. UX & DESIGN CONSIDERATIONS
 
-❌ Can't customize categories
+### 7.1 First-Time User Experience
+- **Onboarding:** Ask for their "Primary Bank" and "Current Cash on Hand" immediately.
+- **Currency Toggle:** The "USD/Bs" toggle should be the most accessible UI element (bottom center thumb zone).
 
-❌ No recurring transactions
+### 7.2 Accessibility
+- **The "Tío/Tía" Test:** Can someone who barely uses WhatsApp navigate the app? Use large buttons and clear icons (💸, 🏦, 📱).
 
-❌ Can't export data
+---
 
-Why Rebuild in Python
-Reason	Explanation
-Backend Logic	Need server-side for security, multi-device sync
-Database	Proper data storage (PostgreSQL/SQLite)
-Authentication	Secure password hashing, sessions
-File Storage	Proper receipt image handling
-API Integration	Real exchange rates from BCV/APIs
-Modularity	Python packages allow clean module separation
-Scalability	Can grow from single user to thousands
-Maintainability	Easier for one developer to manage
-Core Requirements
-MUST HAVE (MVP)
-1. User System
-Secure registration/login (password hashing, not plain text!)
+## 8. TECHNICAL DEBT TRAPS TO AVOID
 
-Session management
+| Trap | Why It Happens | How to Avoid |
+|------|----------------|--------------|
+| **Floating Point Math** | Using `Float` instead of `Decimal` for money. | **MANDATORY:** Always use `Decimal` with `decimal_places=2`. |
+| **Hardcoded Rates** | Assuming there is only one "USD" rate. | Architecture must support multiple "Buckets" of rates (BCV, Parallel, Custom). |
+| **TimeZone Chaos** | Users in VE vs. Users in Miami. | Store all timestamps in UTC; convert to `America/Caracas` only in the UI. |
 
-Password reset capability
+---
 
-2. Dual-Currency Expense Tracking
-Add expenses in Bs or USD
+## 9. SCALABILITY CONSIDERATIONS
 
-Store exchange rate AT TIME OF TRANSACTION
+### 9.1 Data Growth
+- **Receipts:** At 10,000 users, you'll have millions of images. 
+- **Strategy:** Move to a "Cold Storage" model for images older than 6 months.
 
-Show both amounts always
+---
 
-Date tracking for historical accuracy
+## 10. TESTING STRATEGY GAPS
+- **Dual Currency Edge Cases:** Test what happens when the rate is 0.0001 or 1,000,000 (hyperinflation preparedness).
+- **Time-Travel Testing:** Ensure that changing today's rate *never* affects last month's transaction history.
 
-3. Categories
-Default categories (Food, Entertainment, Services, Transportation, Health, Education, Shopping, Other)
+---
 
-Custom categories (users can create their own)
+## 11. MONETIZATION & SUSTAINABILITY
+- **Premium Features:** CSV/PDF Export for taxes, Unlimited Receipt Storage, Family Sharing.
+- **Ad-Lite:** Promote local delivery services or exchange houses (remittances).
 
-Category colors/emojis
+---
 
-4. Income Tracking (CRITICAL GAP FROM COMPETITIVE ANALYSIS)
-Add income in Bs or USD
+## 12. DEVELOPMENT PROCESS SUGGESTIONS
+- **Solo Dev:** Use "Feature Flags" to hide half-finished features (like Goals or Recurring) while the MVP is live.
 
-Income categories (Salary, Freelance, Remittance, Business, Other)
+---
 
-Show income vs expenses
+## 13. QUESTIONS THE ORIGINAL PLANNER SHOULD ANSWER
+1. How will we handle "Vuelto" (change) when it's given in a different currency?
+2. Are we going to support "Accounts" (Banesco, Mercantil) in the MVP, or just one big "Wallet"? (Current plan says Phase 1.5, but users might need it for Pago Móvil tracking).
+3. What is the plan if the BCV changes their website structure and the scraper breaks for 48 hours?
 
-5. Basic Dashboard
-Today's spending
+---
 
-Monthly summary (income vs expenses)
+## 14. UNEXPECTED OPPORTUNITIES
+- **"Calculadora de IGTF":** Automatically add the 3% tax to USD cash transactions to show the "Real Cost."
+- **Price Comparison:** "Users in your area paid $X for Eggs today." (Anonymized data).
 
-Category breakdown chart
+---
 
-Recent transactions list
+## 15. FINAL RECOMMENDATIONS
 
-6. Transaction History
-List all transactions with filters
+### Stop Doing / Reconsider
+- [ ] Relying 100% on server-side templates without an offline-fallback strategy.
+- [ ] Using a single "Exchange Rate" source.
 
-Search functionality (by amount, category, date, notes)
+### Start Doing / Add
+- [ ] **PWA Manifest:** Make it "Installable" on Android.
+- [ ] **Reference Field:** Add a "Ref#" field to every transaction for Pago Móvil.
+- [ ] **Image Compression:** Mandatory before upload.
 
-Edit/delete transactions
+### Keep Doing
+- [ ] **Django Monolith:** Best speed-to-market ratio.
+- [ ] **Historical Rate Locking:** This is your gold mine.
 
-View receipt photos
+---
 
-7. Receipt Photos
-Upload receipt image
-
-Store securely
-
-View with transaction
-
-8. Data Export
-Export to CSV/Excel
-
-Export to PDF (basic report)
-
-9. Exchange Rate Management
-Admin editable rate (fallback)
-
-API integration ready (structure for future)
-
-Historical rate storage per transaction
-
-SHOULD HAVE (Phase 1.5 - Immediate Post-MVP)
-10. Multiple Accounts
-Cash, Bank Account, Credit Card, Savings
-
-Account balances
-
-Transfers between accounts
-
-11. Recurring Transactions
-Setup monthly bills (rent, subscriptions)
-
-Automatic entry creation
-
-Upcoming bills view
-
-12. Savings Goals
-Create goals (Emergency fund, Vacation, etc.)
-
-Track progress
-
-Allocate money toward goals
-
-13. Bill Reminders
-Due date notifications
-
-Overdue alerts
-
-14. Split Transactions
-One purchase across multiple categories
-
-Example: Supermarket = Food (70%) + Cleaning (30%)
-
-COULD HAVE (Phase 2 - Competitive Parity)
-15. Real Exchange Rate API
-BCV (Central Bank of Venezuela) integration
-
-Parallel market rate tracking
-
-Rate alerts
-
-16. Pago Móvil Integration
-Import transaction history
-
-QR code payment tracking
-
-17. Cryptocurrency Tracking
-Track crypto payments (USDT, BTC)
-
-Convert to Bs/USD at transaction time
-
-18. Net Worth Dashboard
-Assets vs Liabilities
-
-Net worth over time chart
-
-19. Advanced Reports
-Spending trends
-
-Category comparisons
-
-Monthly/Yearly comparisons
-
-WON'T HAVE (Phase 3+ - Future)
-20. Bank Sync API
-Direct bank connections (Plaid alternative for Venezuela)
-
-21. OCR Receipt Scanning
-Auto-extract amount/date from receipt photos
-
-22. AI Insights
-Spending pattern analysis
-
-Savings recommendations
-
-23. Family/Group Budgets
-Shared budgets with partners/family
-
-24. Mobile Apps
-Native iOS/Android (Flutter/React Native)
-
-Market Research Summary
-Competitive Landscape (25+ Apps Analyzed)
-Competitor	Strengths	Our Advantage
-YNAB	Great budgeting methodology, clean UI	Dual currency, Venezuela focus
-Mint	Bank sync, comprehensive features	Historical rates, no US bank requirement
-PocketGuard	Simple "in my pocket" concept	Actual dual currency support
-Money Manager	Offline-first	Web-based + offline capable
-Wallet by BudgetBakers	Multi-currency	Stores historical rates per transaction
-Critical Gaps We Must Fill
-Gap	Priority	Why It Matters
-Income Tracking	🔴 CRITICAL	Can't calculate savings without income
-Recurring Transactions	🔴 CRITICAL	Users forget monthly bills
-Multiple Accounts	🔴 HIGH	People have cash, bank, credit cards
-Search/Filter	🔴 HIGH	Can't find past purchases
-Custom Categories	🔴 HIGH	6 categories too limiting
-Data Export	🔴 HIGH	Users own their data
-Security	🔴 CRITICAL	Current plain text passwords = unacceptable
-Cloud Sync	🔴 CRITICAL	localStorage = data loss risk
-Our Unique Advantages
-Advantage	Description
-Dual Currency	Built for Bs/USD from day one
-Historical Rates	Store rate with each transaction (inflation tracking)
-Venezuelan Context	Understand Pago Móvil, remittances, crypto usage
-Receipt Focus	Important for warranties/returns in Venezuela
-Simplicity	Less overwhelming than 30-category apps
-Technical Requirements
-Stack Preference
-Layer	Technology	Reasoning
-Backend Framework	Django or Flask	Need recommendation based on modularity needs
-Database	PostgreSQL (production) / SQLite (dev)	Reliable, scalable
-Authentication	Django Auth / Flask-Login + JWT	Secure from day one
-Frontend	Jinja2 templates + Alpine.js or HTMX	Keep simple, no heavy SPA
-CSS	Tailwind CSS	Matches current design system
-File Storage	Local filesystem (dev) → S3/Cloudinary (prod)	Receipt photos need scalability
-API Integration	Requests library + Celery (async)	Exchange rate fetching
-Deployment	Render / PythonAnywhere / VPS	Start simple, scale later
-Architecture Principles
-Modular - Each feature in its own module
-
-Testable - Unit tests for core logic
-
-Offline Capable - Service worker + local storage fallback
-
-Secure by Default - No plain text anything
-
-Mobile Responsive - Works on phones (primary device in Venezuela)
-
-Modular Structure Vision
-text
-venezuela-finance-app/
-├── manage.py (if Django)
-├── requirements.txt
-├── README.md
-│
-├── core/                       # Core functionality
-│   ├── models.py               # Base models (User, Settings)
-│   ├── auth.py                  # Authentication logic
-│   ├── utils.py                 # Shared utilities
-│   └── admin.py                 # Admin interface
-│
-├── modules/                     # Feature modules
-│   ├── transactions/            # EXPENSE & INCOME MODULE
-│   │   ├── models.py            # Transaction, Category models
-│   │   ├── views.py              # Add/edit/delete views
-│   │   ├── forms.py              # Transaction forms
-│   │   ├── templates/
-│   │   ├── urls.py
-│   │   └── utils.py              # Currency conversion logic
-│   │
-│   ├── accounts/                 # ACCOUNTS MODULE (Phase 1.5)
-│   │   ├── models.py              # Account, AccountType
-│   │   ├── views.py
-│   │   └── ...
-│   │
-│   ├── recurring/                 # RECURRING MODULE (Phase 1.5)
-│   │   ├── models.py              # RecurringRule
-│   │   ├── management/            # Cron jobs for generating transactions
-│   │   └── ...
-│   │
-│   ├── goals/                      # SAVINGS GOALS MODULE (Phase 1.5)
-│   │   ├── models.py
-│   │   └── ...
-│   │
-│   ├── reports/                    # REPORTS MODULE (Phase 2)
-│   │   ├── views.py                 # Dashboard, charts
-│   │   ├── charts.py                # Data aggregation
-│   │   └── ...
-│   │
-│   ├── export/                      # EXPORT MODULE (MVP)
-│   │   ├── views.py                 # CSV/Excel generation
-│   │   └── ...
-│   │
-│   └── api/                          # API MODULE (for future mobile apps)
-│       ├── serializers.py
-│       ├── views.py
-│       └── ...
-│
-├── static/                           # CSS, JS, images
-│   ├── css/
-│   ├── js/
-│   └── img/
-│
-├── media/                             # User uploaded receipts
-│   └── receipts/
-│
-├── templates/                          # Base templates
-│   ├── base.html
-│   ├── includes/
-│   └── ...
-│
-└── docs/                               # Documentation
-    ├── architecture.md
-    ├── modules.md
-    └── api.md
-Module Dependency Map
-text
-                    ┌─────────────────┐
-                    │     CORE        │
-                    │ (Auth, Settings)│
-                    └────────┬────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────┐
-│                  TRANSACTIONS                    │
-│         (Foundation Module - MVP)                │
-│     - Expenses             - Income              │
-│     - Categories           - Receipts            │
-│     - Dual Currency        - Search              │
-└────────┬───────────────────────────┬────────────┘
-         │                           │
-         ▼                           ▼
-┌─────────────────┐          ┌─────────────────┐
-│    ACCOUNTS     │          │   RECURRING     │
-│   (Phase 1.5)   │          │   (Phase 1.5)   │
-└────────┬────────┘          └────────┬────────┘
-         │                            │
-         └──────────────┬─────────────┘
-                        ▼
-                ┌─────────────────┐
-                │     GOALS       │
-                │   (Phase 1.5)   │
-                └────────┬────────┘
-                         │
-                         ▼
-                ┌─────────────────┐
-                │    REPORTS      │
-                │   (Phase 2)     │
-                └─────────────────┘
-Development Phases
-PHASE 0: Foundation (Week 1-2)
-Project setup (Django/Flask decision)
-
-Database configuration
-
-User authentication system (secure)
-
-Base templates and styling
-
-Admin interface
-
-PHASE 1: Core MVP (Weeks 3-6)
-Transaction module (expenses + income)
-
-Category system (with custom categories)
-
-Dual currency with exchange rate storage
-
-Basic dashboard
-
-Transaction history with search
-
-Receipt photo upload
-
-Export to CSV
-
-PHASE 1.5: Critical Gaps (Weeks 7-10)
-Multiple accounts module
-
-Recurring transactions
-
-Savings goals
-
-Bill reminders
-
-Split transactions
-
-PHASE 2: Competitive Parity (Weeks 11-16)
-Real exchange rate API
-
-Enhanced reports and charts
-
-Pago Móvil integration (research)
-
-Cryptocurrency tracking
-
-Net worth tracking
-
-PHASE 3: Differentiation (Weeks 17-24)
-OCR receipt scanning
-
-AI insights
-
-Family budgets
-
-Mobile app prep (API solidification)
-
-Success Criteria
-MVP Launch Requirements
-50 beta users can track expenses for 30 days
-
-No data loss incidents
-
-Users can find past transactions
-
-Users can create custom categories
-
-Income vs expenses clearly visible
-
-Export works correctly
-
-Zero security issues (no plain text passwords)
-
-Retention Targets
-Day 1: 70% (exceed industry 60-70%)
-
-Day 7: 40% (meet industry 30-40%)
-
-Day 30: 25% (meet industry 15-25%)
-
-Performance Targets
-Page load < 2 seconds
-
-Search results < 1 second
-
-Receipt upload < 3 seconds
-
-Works on low-end devices
-
-Works with intermittent connectivity
-
-Appendix: Competitive Analysis
-Feature Comparison Summary
-Feature	Mint	YNAB	PocketGuard	Our App (Target)
-Expense Tracking	✅	✅	✅	✅ MVP
-Income Tracking	✅	✅	✅	✅ MVP
-Bank Sync	✅	✅	✅	⏳ Phase 3
-Dual Currency	❌	❌	❌	✅ UNIQUE
-Historical Rates	❌	❌	❌	✅ UNIQUE
-Custom Categories	✅	✅	✅	✅ MVP
-Recurring Bills	✅	✅	✅	✅ Phase 1.5
-Savings Goals	✅	✅	✅	✅ Phase 1.5
-Multiple Accounts	✅	✅	✅	✅ Phase 1.5
-Receipt Storage	⚠️ Limited	❌	❌	✅ Phase 1
-Export Data	✅	✅	✅	✅ MVP
-Mobile App	✅	✅	✅	⏳ Phase 3
-Offline Mode	⚠️ Limited	❌	❌	✅ Phase 2
-Venezuelan Context	❌	❌	❌	✅ UNIQUE
-Critical Path Items (Must Not Skip)
-text
-1. SECURE AUTHENTICATION ──────────────────┐
-                                           ▼
-2. INCOME + EXPENSE TRACKING ──────┐    All other
-                                    ▼    features
-3. DUAL CURRENCY WITH HISTORICAL RATES  depend on
-                                    ▲    these
-4. CUSTOM CATEGORIES ───────────────┘
-                                           │
-5. SEARCH FUNCTIONALITY ───────────────────┘
-❗ Important Reminders
-Security First - Never store plain text passwords. Ever.
-
-Modular Design - Each feature should be replaceable.
-
-Mobile Priority - Most Venezuelan users access via phone.
-
-Offline Capable - Internet is not guaranteed.
-
-Start Simple - Build the transaction module perfectly before adding complexity.
-
-Historical Rates - This is our differentiator. Store rate with EVERY transaction.
-
-Next Steps for AI
-Based on this document, please provide:
-
-Framework Recommendation - Django vs Flask for this modular architecture
-
-Detailed Module Design - Deep dive on the Transactions module (models, views, logic)
-
-Database Schema - Complete SQL for all MVP tables
-
-Setup Instructions - Step-by-step to get the foundation running
-
-Module 1 Code - The complete Transactions module code
-
-Document Version: 2.0
-Last Updated: November 2025
-Status: Planning Phase
-Next Action: Architecture Decision
+## 16. RESOURCES & REFERENCES
+- **pyDolarVenezuela:** Keep this but add a health-check.
+- **HTMX.org:** For the "SPA feel" without the React overhead.
+- **Workbox (Google):** For PWA/Service Worker management.
